@@ -18,9 +18,10 @@ go get github.com/raferat/gospapi-wrapper
 
 ## Examples
 ```golang
+package main
 
 import (
-    "context"
+    
     api "github.com/raferat/gospapi-wrapper"
 )
 
