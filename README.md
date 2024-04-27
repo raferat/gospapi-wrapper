@@ -21,7 +21,7 @@ go get github.com/raferat/gospapi-wrapper
 
 import (
     "context"
-    api "github.com/raferat/gospapi/api_wrapper"
+    api "github.com/raferat/gospapi-wrapper"
 )
 
 
