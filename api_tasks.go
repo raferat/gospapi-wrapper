@@ -13,15 +13,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/antihax/optional"
 )
-
-// Linger please
-/*var (
-	_ context.Context
-)*/
 
 type TasksApiService service
 
@@ -35,8 +29,8 @@ TasksApiService Vygeneruje vstup pro úlohu
 */
 func (serv *TasksApiService) TasksGeneratePost(ctx context.Context, task string, subtask string) (Subtask, *http.Response, error) {
 	var (
-		requestBody    interface{}
-		parsedResponse Subtask
+		requestBody interface{}
+		result      Subtask
 	)
 
 	// create path and map variables
@@ -52,31 +46,38 @@ func (serv *TasksApiService) TasksGeneratePost(ctx context.Context, task string,
 
 	r, err := serv.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, requestQuery, url.Values{}, "", []byte{})
 	if err != nil {
-		return parsedResponse, nil, err
+		return result, nil, err
 	}
 
 	rawResponse, err := serv.client.callAPI(r)
 	if err != nil || rawResponse == nil {
-		return parsedResponse, rawResponse, err
+		return result, rawResponse, err
 	}
 
 	responseBody, err := io.ReadAll(rawResponse.Body)
 	rawResponse.Body.Close()
 	if err != nil {
-		return parsedResponse, rawResponse, err
+		return result, rawResponse, err
 	}
 
 	if rawResponse.StatusCode < 300 {
 		// If we succeed, return the data, otherwise pass on to decode error.
-		err = serv.client.decode(&parsedResponse, responseBody, rawResponse.Header.Get("Content-Type"))
-		return parsedResponse, rawResponse, err
+		err = serv.client.decode(&result, responseBody, rawResponse.Header.Get("Content-Type"))
+		return result, rawResponse, err
 	}
 
 	newErr := GenericSwaggerError{
 		body:  responseBody,
 		error: rawResponse.Status,
 	}
-	return parsedResponse, rawResponse, newErr
+	var v ModelError
+	err = serv.client.decode(&v, responseBody, rawResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr.error = err.Error()
+		return result, rawResponse, newErr
+	}
+	newErr.model = v
+	return result, rawResponse, newErr
 }
 
 /*
@@ -134,6 +135,13 @@ func (serv *TasksApiService) TasksInputPost(ctx context.Context, task string, su
 		body:  responseBody,
 		error: rawResponse.Status,
 	}
+	var v ModelError
+	err = serv.client.decode(&v, responseBody, rawResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr.error = err.Error()
+		return responseBody, rawResponse, newErr
+	}
+	newErr.model = v
 	return responseBody, rawResponse, newErr
 }
 
@@ -151,8 +159,8 @@ type TasksApiTasksListGetOpts struct {
 
 func (serv *TasksApiService) TasksListGet(ctx context.Context, requestOptions *TasksApiTasksListGetOpts) ([]string, *http.Response, error) {
 	var (
-		requestBody    interface{}
-		parsedResponse []string
+		requestBody interface{}
+		result      []string
 	)
 
 	// create path and map variables
@@ -169,31 +177,38 @@ func (serv *TasksApiService) TasksListGet(ctx context.Context, requestOptions *T
 
 	r, err := serv.client.prepareRequest(ctx, requestPath, "GET", requestBody, requestHeaders, requestQueryParams, url.Values{}, "", []byte{})
 	if err != nil {
-		return parsedResponse, nil, err
+		return result, nil, err
 	}
 
 	rawResponse, err := serv.client.callAPI(r)
 	if err != nil || rawResponse == nil {
-		return parsedResponse, rawResponse, err
+		return result, rawResponse, err
 	}
 
 	responseBody, err := io.ReadAll(rawResponse.Body)
 	rawResponse.Body.Close()
 	if err != nil {
-		return parsedResponse, rawResponse, err
+		return result, rawResponse, err
 	}
 
 	if rawResponse.StatusCode < 300 {
 		// If we succeed, return the data, otherwise pass on to decode error.
-		err = serv.client.decode(&parsedResponse, responseBody, rawResponse.Header.Get("Content-Type"))
-		return parsedResponse, rawResponse, err
+		err = serv.client.decode(&result, responseBody, rawResponse.Header.Get("Content-Type"))
+		return result, rawResponse, err
 	}
 
 	newErr := GenericSwaggerError{
 		body:  responseBody,
 		error: rawResponse.Status,
 	}
-	return parsedResponse, rawResponse, newErr
+	var v ModelError
+	err = serv.client.decode(&v, responseBody, rawResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr.error = err.Error()
+		return result, rawResponse, newErr
+	}
+	newErr.model = v
+	return result, rawResponse, newErr
 }
 
 /*
@@ -203,14 +218,14 @@ TasksApiService Získání stavu úlohy
 
 @return Task
 */
-func (a *TasksApiService) TasksStatusGet(ctx context.Context, task string) (Task, *http.Response, error) {
+func (serv *TasksApiService) TasksStatusGet(ctx context.Context, task string) (Task, *http.Response, error) {
 	var (
 		requestBody interface{}
 		result      Task
 	)
 
 	// create path and map variables
-	requestPath := a.client.cfg.BasePath + "/tasks/status"
+	requestPath := serv.client.cfg.BasePath + "/tasks/status"
 
 	requestHeaders := make(map[string]string)
 	requestQueryParams := url.Values{}
@@ -220,12 +235,12 @@ func (a *TasksApiService) TasksStatusGet(ctx context.Context, task string) (Task
 	// set Accept header
 	requestHeaders["Accept"] = "application/json"
 
-	r, err := a.client.prepareRequest(ctx, requestPath, "GET", requestBody, requestHeaders, requestQueryParams, url.Values{}, "", []byte{})
+	r, err := serv.client.prepareRequest(ctx, requestPath, "GET", requestBody, requestHeaders, requestQueryParams, url.Values{}, "", []byte{})
 	if err != nil {
 		return result, nil, err
 	}
 
-	rawResponse, err := a.client.callAPI(r)
+	rawResponse, err := serv.client.callAPI(r)
 	if err != nil || rawResponse == nil {
 		return result, rawResponse, err
 	}
@@ -237,7 +252,7 @@ func (a *TasksApiService) TasksStatusGet(ctx context.Context, task string) (Task
 	}
 
 	if rawResponse.StatusCode < 300 {
-		err = a.client.decode(&result, responseBody, rawResponse.Header.Get("Content-Type"))
+		err = serv.client.decode(&result, responseBody, rawResponse.Header.Get("Content-Type"))
 		return result, rawResponse, err
 	}
 
@@ -245,6 +260,13 @@ func (a *TasksApiService) TasksStatusGet(ctx context.Context, task string) (Task
 		body:  responseBody,
 		error: rawResponse.Status,
 	}
+	var v ModelError
+	err = serv.client.decode(&v, responseBody, rawResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr.error = err.Error()
+		return result, rawResponse, newErr
+	}
+	newErr.model = v
 	return result, rawResponse, newErr
 }
 
@@ -321,86 +343,51 @@ Vypíše přehled všech úloh dostupných ve Cvičišti spolu se souhrnem bodů
 
 @return []Task
 */
-func (a *TasksApiService) TasksXSummaryGet(ctx context.Context) ([]Task, *http.Response, error) {
+func (serv *TasksApiService) TasksXSummaryGet(ctx context.Context) ([]Task, *http.Response, error) {
 	var (
-		localVarHttpMethod  = strings.ToUpper("Get")
-		localVarPostBody    interface{}
-		localVarFileName    string
-		localVarFileBytes   []byte
-		localVarReturnValue []Task
+		requestBody interface{}
+		result      []Task
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/tasks/x-summary"
+	requestPath := serv.client.cfg.BasePath + "/tasks/x-summary"
 
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
+	requestHeaders := make(map[string]string)
+	requestQueryParams := url.Values{}
 
-	// set Accept header
-	localVarHeaderParams["Accept"] = "application/json"
+	requestHeaders["Accept"] = "application/json"
 
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	r, err := serv.client.prepareRequest(ctx, requestPath, "GET", requestBody, requestHeaders, requestQueryParams, url.Values{}, "", []byte{})
 	if err != nil {
-		return localVarReturnValue, nil, err
+		return result, nil, err
 	}
 
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return localVarReturnValue, localVarHttpResponse, err
+	rawResponse, err := serv.client.callAPI(r)
+	if err != nil || rawResponse == nil {
+		return result, rawResponse, err
 	}
 
-	localVarBody, err := io.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
+	responseBody, err := io.ReadAll(rawResponse.Body)
+	rawResponse.Body.Close()
 	if err != nil {
-		return localVarReturnValue, localVarHttpResponse, err
+		return result, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode < 300 {
-		// If we succeed, return the data, otherwise pass on to decode error.
-		err = a.client.decode(&localVarReturnValue, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-		if err == nil {
-			return localVarReturnValue, localVarHttpResponse, err
-		}
+	if rawResponse.StatusCode < 300 {
+		err = serv.client.decode(&result, responseBody, rawResponse.Header.Get("Content-Type"))
+		return result, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode >= 300 {
-		newErr := GenericSwaggerError{
-			body:  localVarBody,
-			error: localVarHttpResponse.Status,
-		}
-		if localVarHttpResponse.StatusCode == 200 {
-			var v []Task
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 4 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 5 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		return localVarReturnValue, localVarHttpResponse, newErr
+	newErr := GenericSwaggerError{
+		body:  responseBody,
+		error: rawResponse.Status,
 	}
-
-	return localVarReturnValue, localVarHttpResponse, nil
+	var v ModelError
+	err = serv.client.decode(&v, responseBody, rawResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr.error = err.Error()
+		return result, rawResponse, newErr
+	}
+	newErr.model = v
+	return result, rawResponse, newErr
 }
