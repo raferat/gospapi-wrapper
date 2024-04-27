@@ -12,4 +12,33 @@ Simple API client for the <strong>KSP (Korespondenční seminář programování
 
 ## Installing
 
-## Usage
+```bash
+go get github.com/raferat/gospapi-wrapper
+```
+
+## Examples
+```golang
+
+import (
+    "context"
+    api "github.com/raferat/gospapi-wrapper"
+)
+
+
+func main() {
+    cfg := api.NewConfiguration()
+    cfg.UserAgent = "My user agent"
+    client := api.NewAPIClient(cfg)
+    
+    token := "REDACTED"  //your generated token 
+    ctx := context.WithValue(context.Background(),api.ContextAccessToken,token)
+//use the client, get tasklist
+    opts := &api.TasksApiTasksListGetOpts{}
+    tasknamelist, _, err := client.TasksApi.TasksListGet(ctx,opts)
+    //handle error
+    //use the retreived value
+}
+```
+
+## Documentation
+<p style="font-size: 15pt; color: red;" align="center">Coming soon</p>
