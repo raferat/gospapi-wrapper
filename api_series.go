@@ -13,10 +13,22 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
+	"time"
 
 	"github.com/antihax/optional"
 )
+
+type Series struct {
+	// ID série
+	Id string `json:"id"`
+	// Čas zveřejnění zadání úloh. Ve formátu [dle RFC3339](https://tools.ietf.org/html/rfc3339#section-5.6).
+	TasksPublished time.Time `json:"tasks_published,omitempty"`
+	// Termín odevzdání řešení. Ve formátu [dle RFC3339](https://tools.ietf.org/html/rfc3339#section-5.6).
+	Deadline time.Time `json:"deadline,omitempty"`
+	// Termín odevzdání řešení za redukovaný počet bodů (druhý termín v KSP-Z).
+	Deadline2 time.Time     `json:"deadline2,omitempty"`
+	Tasks     []SeriesTasks `json:"tasks,omitempty"`
+}
 
 // Linger please
 var (
@@ -39,73 +51,63 @@ type SeriesApiTasksCatalogGetOpts struct {
 	Tasks optional.Bool
 }
 
-func (a *SeriesApiService) TasksCatalogGet(ctx context.Context, localVarOptionals *SeriesApiTasksCatalogGetOpts) ([]Series, *http.Response, error) {
+func (seriesService *SeriesApiService) TasksCatalogGet(ctx context.Context, requestOptions *SeriesApiTasksCatalogGetOpts) ([]Series, *http.Response, error) {
 	var (
-		localVarHttpMethod  = strings.ToUpper("Get")
-		localVarPostBody    interface{}
-		localVarFileName    string
-		localVarFileBytes   []byte
-		localVarReturnValue []Series
+		localVarPostBody interface{}
+		parsedResponse   []Series
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/tasks/catalog"
+	requestPath := seriesService.client.cfg.BasePath + "/tasks/catalog"
 
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
+	requestHeaders := make(map[string]string)
+	requestQueryParams := url.Values{}
 
-	if localVarOptionals != nil && localVarOptionals.Year.IsSet() {
-		localVarQueryParams.Add("year", parameterToString(localVarOptionals.Year.Value(), ""))
+	if requestOptions != nil && requestOptions.Year.IsSet() {
+		requestQueryParams.Add("year", parameterToString(requestOptions.Year.Value(), ""))
 	}
-	if localVarOptionals != nil && localVarOptionals.Tasks.IsSet() {
-		localVarQueryParams.Add("tasks", parameterToString(localVarOptionals.Tasks.Value(), ""))
+	if requestOptions != nil && requestOptions.Tasks.IsSet() {
+		requestQueryParams.Add("tasks", parameterToString(requestOptions.Tasks.Value(), ""))
 	}
 
 	// set Accept header
-	localVarHeaderParams["Accept"] = "application/json"
+	requestHeaders["Accept"] = "application/json"
 
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	r, err := seriesService.client.prepareRequest(
+		ctx,
+		requestPath,
+		"GET",
+		localVarPostBody,
+		requestHeaders,
+		requestQueryParams,
+		url.Values{},
+		"",
+		[]byte{},
+	)
 	if err != nil {
-		return localVarReturnValue, nil, err
+		return parsedResponse, nil, err
 	}
 
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return localVarReturnValue, localVarHttpResponse, err
+	rawResponse, err := seriesService.client.callAPI(r)
+	if err != nil || rawResponse == nil {
+		return parsedResponse, rawResponse, err
 	}
 
-	localVarBody, err := io.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
+	responseBody, err := io.ReadAll(rawResponse.Body)
+	rawResponse.Body.Close()
 	if err != nil {
-		return localVarReturnValue, localVarHttpResponse, err
+		return parsedResponse, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode < 300 {
+	if rawResponse.StatusCode < 300 {
 		// If we succeed, return the data, otherwise pass on to decode error.
-		err = a.client.decode(&localVarReturnValue, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-		if err == nil {
-			return localVarReturnValue, localVarHttpResponse, err
-		}
+		err = seriesService.client.decode(&parsedResponse, responseBody, rawResponse.Header.Get("Content-Type"))
+		return parsedResponse, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode >= 300 {
-		newErr := GenericSwaggerError{
-			body:  localVarBody,
-			error: localVarHttpResponse.Status,
-		}
-		if localVarHttpResponse.StatusCode == 200 {
-			var v []Series
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		return localVarReturnValue, localVarHttpResponse, newErr
+	newErr := GenericSwaggerError{
+		body:  responseBody,
+		error: rawResponse.Status,
 	}
-
-	return localVarReturnValue, localVarHttpResponse, nil
+	return parsedResponse, rawResponse, newErr
 }

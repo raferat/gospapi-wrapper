@@ -72,25 +72,6 @@ func (authService *AuthApiService) AuthXGetTokenPost(ctx context.Context) (Inlin
 		body:  retreivedBody,
 		error: response.Status,
 	}
-	if response.StatusCode/100 == 4 {
-		var v ModelError
-		err = authService.client.decode(&v, retreivedBody, response.Header.Get("Content-Type"))
-		if err != nil {
-			newErr.error = err.Error()
-			return parsedResp, response, newErr
-		}
-		newErr.model = v
-		return parsedResp, response, newErr
-	}
-	if response.StatusCode/100 == 5 {
-		var v ModelError
-		err = authService.client.decode(&v, retreivedBody, response.Header.Get("Content-Type"))
-		if err != nil {
-			newErr.error = err.Error()
-			return parsedResp, response, newErr
-		}
-		newErr.model = v
-		return parsedResp, response, newErr
-	}
+
 	return parsedResp, response, newErr
 }
