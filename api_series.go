@@ -53,8 +53,8 @@ type SeriesApiTasksCatalogGetOpts struct {
 
 func (seriesService *SeriesApiService) TasksCatalogGet(ctx context.Context, requestOptions *SeriesApiTasksCatalogGetOpts) ([]Series, *http.Response, error) {
 	var (
-		localVarPostBody interface{}
-		parsedResponse   []Series
+		requestBody    interface{}
+		parsedResponse []Series
 	)
 
 	// create path and map variables
@@ -77,7 +77,7 @@ func (seriesService *SeriesApiService) TasksCatalogGet(ctx context.Context, requ
 		ctx,
 		requestPath,
 		"GET",
-		localVarPostBody,
+		requestBody,
 		requestHeaders,
 		requestQueryParams,
 		url.Values{},
