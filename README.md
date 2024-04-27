@@ -18,9 +18,10 @@ go get github.com/raferat/gospapi-wrapper
 
 ## Examples
 ```golang
+package main
 
 import (
-    "context"
+    
     api "github.com/raferat/gospapi-wrapper"
 )
 
@@ -31,10 +32,10 @@ func main() {
     client := api.NewAPIClient(cfg)
     
     token := "REDACTED"  //your generated token 
-    ctx := context.WithValue(context.Background(),api.ContextAccessToken,token)
+    session := client.Login(token)
 //use the client, get tasklist
     opts := &api.TasksApiTasksListGetOpts{}
-    tasknamelist, _, err := client.TasksApi.TasksListGet(ctx,opts)
+    tasknamelist, _, err := client.TasksApi.TasksListGet(session,opts)
     //handle error
     //use the retreived value
 }
