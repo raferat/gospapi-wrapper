@@ -93,74 +93,48 @@ type TasksApiTasksInputPostOpts struct {
 	Generate optional.Bool
 }
 
-func (a *TasksApiService) TasksInputPost(ctx context.Context, task string, subtask string, localVarOptionals *TasksApiTasksInputPostOpts) ([]byte, *http.Response, error) {
-	var (
-		localVarHttpMethod = strings.ToUpper("Post")
-		localVarPostBody   interface{}
-		localVarFileName   string
-		localVarFileBytes  []byte
-	)
+func (serv *TasksApiService) TasksInputPost(ctx context.Context, task string, subtask string, requestOptions *TasksApiTasksInputPostOpts) ([]byte, *http.Response, error) {
+	var requestBody interface{}
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/tasks/input"
+	requestPath := serv.client.cfg.BasePath + "/tasks/input"
 
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
+	requestHeaders := make(map[string]string)
+	requestQeryParams := url.Values{}
 
-	localVarQueryParams.Add("task", parameterToString(task, ""))
-	localVarQueryParams.Add("subtask", parameterToString(subtask, ""))
-	if localVarOptionals != nil && localVarOptionals.Generate.IsSet() {
-		localVarQueryParams.Add("generate", parameterToString(localVarOptionals.Generate.Value(), ""))
+	requestQeryParams.Add("task", parameterToString(task, ""))
+	requestQeryParams.Add("subtask", parameterToString(subtask, ""))
+	if requestOptions != nil && requestOptions.Generate.IsSet() {
+		requestQeryParams.Add("generate", parameterToString(requestOptions.Generate.Value(), ""))
 	}
 
-	localVarHeaderParams["Accept"] = "application/json"
+	requestHeaders["Accept"] = "application/json"
 
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	r, err := serv.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, requestQeryParams, url.Values{}, "", []byte{})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return nil, localVarHttpResponse, err
+	rawResponse, err := serv.client.callAPI(r)
+	if err != nil || rawResponse == nil {
+		return nil, rawResponse, err
 	}
 
-	localVarBody, err := io.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
+	responseBody, err := io.ReadAll(rawResponse.Body)
+	rawResponse.Body.Close()
 	if err != nil {
-		return localVarBody, localVarHttpResponse, err
+		return responseBody, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode >= 300 {
-		newErr := GenericSwaggerError{
-			body:  localVarBody,
-			error: localVarHttpResponse.Status,
-		}
-		if localVarHttpResponse.StatusCode/100 == 4 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarBody, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarBody, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 5 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarBody, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarBody, localVarHttpResponse, newErr
-		}
-		return localVarBody, localVarHttpResponse, newErr
+	if rawResponse.StatusCode < 300 {
+		return responseBody, rawResponse, nil
 	}
 
-	return localVarBody, localVarHttpResponse, nil
+	newErr := GenericSwaggerError{
+		body:  responseBody,
+		error: rawResponse.Status,
+	}
+	return responseBody, rawResponse, newErr
 }
 
 /*
