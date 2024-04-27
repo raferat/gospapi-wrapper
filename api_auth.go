@@ -29,7 +29,7 @@ Vytvoří uživateli přihlášenému na webu KSP dočasný API token. Je určen
 
 @return InlineResponse200
 */
-func (a *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineResponse200, *http.Response, error) {
+func (authService *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineResponse200, *http.Response, error) {
 	var (
 		requestBody       interface{}
 		localVarFileBytes []byte
@@ -37,19 +37,19 @@ func (a *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineResponse2
 	)
 
 	// create path and map variables
-	requestPath := a.client.cfg.BasePath + "/auth/x-get-token"
+	requestPath := authService.client.cfg.BasePath + "/auth/x-get-token"
 
 	requestHeaders := make(map[string]string)
 
 	// set Accept header
 	requestHeaders["Accept"] = "application/json"
 
-	r, err := a.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, url.Values{}, url.Values{}, "", localVarFileBytes)
+	r, err := authService.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, url.Values{}, url.Values{}, "", localVarFileBytes)
 	if err != nil {
 		return parsedResp, nil, err
 	}
 
-	response, err := a.client.callAPI(r)
+	response, err := authService.client.callAPI(r)
 	if err != nil || response == nil {
 		return parsedResp, response, err
 	}
@@ -62,7 +62,7 @@ func (a *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineResponse2
 
 	if response.StatusCode < 300 {
 		// If we succeed, return the data, otherwise pass on to decode error.
-		err = a.client.decode(&parsedResp, retreivedBody, response.Header.Get("Content-Type"))
+		err = authService.client.decode(&parsedResp, retreivedBody, response.Header.Get("Content-Type"))
 		if err == nil {
 			return parsedResp, response, err
 		}
@@ -74,7 +74,7 @@ func (a *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineResponse2
 	}
 	if response.StatusCode/100 == 4 {
 		var v ModelError
-		err = a.client.decode(&v, retreivedBody, response.Header.Get("Content-Type"))
+		err = authService.client.decode(&v, retreivedBody, response.Header.Get("Content-Type"))
 		if err != nil {
 			newErr.error = err.Error()
 			return parsedResp, response, newErr
@@ -84,7 +84,7 @@ func (a *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineResponse2
 	}
 	if response.StatusCode/100 == 5 {
 		var v ModelError
-		err = a.client.decode(&v, retreivedBody, response.Header.Get("Content-Type"))
+		err = authService.client.decode(&v, retreivedBody, response.Header.Get("Content-Type"))
 		if err != nil {
 			newErr.error = err.Error()
 			return parsedResp, response, newErr
