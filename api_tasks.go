@@ -19,9 +19,9 @@ import (
 )
 
 // Linger please
-var (
+/*var (
 	_ context.Context
-)
+)*/
 
 type TasksApiService service
 
@@ -33,92 +33,50 @@ TasksApiService Vygeneruje vstup pro úlohu
 
 @return Subtask
 */
-func (a *TasksApiService) TasksGeneratePost(ctx context.Context, task string, subtask string) (Subtask, *http.Response, error) {
+func (serv *TasksApiService) TasksGeneratePost(ctx context.Context, task string, subtask string) (Subtask, *http.Response, error) {
 	var (
-		localVarHttpMethod  = strings.ToUpper("Post")
-		localVarPostBody    interface{}
-		localVarFileName    string
-		localVarFileBytes   []byte
-		localVarReturnValue Subtask
+		requestBody    interface{}
+		parsedResponse Subtask
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/tasks/generate"
+	requestPath := serv.client.cfg.BasePath + "/tasks/generate"
 
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
+	requestHeaders := make(map[string]string)
+	requestQuery := url.Values{}
 
-	localVarQueryParams.Add("task", parameterToString(task, ""))
-	localVarQueryParams.Add("subtask", parameterToString(subtask, ""))
+	requestQuery.Add("task", parameterToString(task, ""))
+	requestQuery.Add("subtask", parameterToString(subtask, ""))
 
-	// set Content-Type header
-	// set Accept header
-	localVarHeaderParams["Accept"] = "application/json"
+	requestHeaders["Accept"] = "application/json"
 
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	r, err := serv.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, requestQuery, url.Values{}, "", []byte{})
 	if err != nil {
-		return localVarReturnValue, nil, err
+		return parsedResponse, nil, err
 	}
 
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return localVarReturnValue, localVarHttpResponse, err
+	rawResponse, err := serv.client.callAPI(r)
+	if err != nil || rawResponse == nil {
+		return parsedResponse, rawResponse, err
 	}
 
-	localVarBody, err := io.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
+	responseBody, err := io.ReadAll(rawResponse.Body)
+	rawResponse.Body.Close()
 	if err != nil {
-		return localVarReturnValue, localVarHttpResponse, err
+		return parsedResponse, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode < 300 {
+	if rawResponse.StatusCode < 300 {
 		// If we succeed, return the data, otherwise pass on to decode error.
-		err = a.client.decode(&localVarReturnValue, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-		if err == nil {
-			return localVarReturnValue, localVarHttpResponse, err
-		}
+		err = serv.client.decode(&parsedResponse, responseBody, rawResponse.Header.Get("Content-Type"))
+		return parsedResponse, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode >= 300 {
-		newErr := GenericSwaggerError{
-			body:  localVarBody,
-			error: localVarHttpResponse.Status,
-		}
-		if localVarHttpResponse.StatusCode == 200 {
-			var v Subtask
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 4 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 5 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		return localVarReturnValue, localVarHttpResponse, newErr
+	newErr := GenericSwaggerError{
+		body:  responseBody,
+		error: rawResponse.Status,
 	}
-
-	return localVarReturnValue, localVarHttpResponse, nil
+	return parsedResponse, rawResponse, newErr
 }
 
 /*
