@@ -13,7 +13,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 // Linger please
@@ -32,84 +31,66 @@ Vytvoří uživateli přihlášenému na webu KSP dočasný API token. Je určen
 */
 func (a *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineResponse200, *http.Response, error) {
 	var (
-		localVarHttpMethod  = strings.ToUpper("Post")
-		localVarPostBody    interface{}
-		localVarFileName    string
-		localVarFileBytes   []byte
-		localVarReturnValue InlineResponse200
+		requestBody       interface{}
+		localVarFileBytes []byte
+		parsedResp        InlineResponse200
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/auth/x-get-token"
+	requestPath := a.client.cfg.BasePath + "/auth/x-get-token"
 
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
+	requestHeaders := make(map[string]string)
 
 	// set Accept header
-	localVarHeaderParams["Accept"] = "application/json"
+	requestHeaders["Accept"] = "application/json"
 
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	r, err := a.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, url.Values{}, url.Values{}, "", localVarFileBytes)
 	if err != nil {
-		return localVarReturnValue, nil, err
+		return parsedResp, nil, err
 	}
 
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return localVarReturnValue, localVarHttpResponse, err
+	response, err := a.client.callAPI(r)
+	if err != nil || response == nil {
+		return parsedResp, response, err
 	}
 
-	localVarBody, err := io.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
+	retreivedBody, err := io.ReadAll(response.Body)
+	response.Body.Close()
 	if err != nil {
-		return localVarReturnValue, localVarHttpResponse, err
+		return parsedResp, response, err
 	}
 
-	if localVarHttpResponse.StatusCode < 300 {
+	if response.StatusCode < 300 {
 		// If we succeed, return the data, otherwise pass on to decode error.
-		err = a.client.decode(&localVarReturnValue, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
+		err = a.client.decode(&parsedResp, retreivedBody, response.Header.Get("Content-Type"))
 		if err == nil {
-			return localVarReturnValue, localVarHttpResponse, err
+			return parsedResp, response, err
 		}
 	}
 
-	if localVarHttpResponse.StatusCode >= 300 {
-		newErr := GenericSwaggerError{
-			body:  localVarBody,
-			error: localVarHttpResponse.Status,
-		}
-		if localVarHttpResponse.StatusCode == 200 {
-			var v InlineResponse200
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 4 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 5 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		return localVarReturnValue, localVarHttpResponse, newErr
+	newErr := GenericSwaggerError{
+		body:  retreivedBody,
+		error: response.Status,
 	}
-
-	return localVarReturnValue, localVarHttpResponse, nil
+	if response.StatusCode/100 == 4 {
+		var v ModelError
+		err = a.client.decode(&v, retreivedBody, response.Header.Get("Content-Type"))
+		if err != nil {
+			newErr.error = err.Error()
+			return parsedResp, response, newErr
+		}
+		newErr.model = v
+		return parsedResp, response, newErr
+	}
+	if response.StatusCode/100 == 5 {
+		var v ModelError
+		err = a.client.decode(&v, retreivedBody, response.Header.Get("Content-Type"))
+		if err != nil {
+			newErr.error = err.Error()
+			return parsedResp, response, newErr
+		}
+		newErr.model = v
+		return parsedResp, response, newErr
+	}
+	return parsedResp, response, newErr
 }
