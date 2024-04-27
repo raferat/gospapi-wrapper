@@ -1,0 +1,561 @@
+openapi: 3.0.0
+info:
+  title: KSP API
+  description: |
+    API pro interakci s webem KSP.
+  version: "1"
+servers:
+- url: https://ksp.mff.cuni.cz/api
+security:
+- BearerAuth: []
+paths:
+  /tasks/list:
+    get:
+      tags:
+      - tasks
+      summary: Seznam aktuálně řešitelných úloh (nevyžaduje autentikaci)
+      parameters:
+      - name: set
+        in: query
+        description: "Název množiny úloh, která se má zobrazit. Default jsou otevř\
+          ené úlohy z kategorií H a Z, explicitně si můžete vybrat `cviciste`. Pokud\
+          \ chcete o úlohách vědět více, může se hodit end-point `catalog`."
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Seznam řešitelných úloh
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: "id úlohy, kterou je možné odevzdávat"
+                  example: 32-Z1-4
+                x-content-type: application/json
+  /tasks/catalog:
+    get:
+      tags:
+      - series
+      summary: Seznam sérií a úloh v nich (nevyžaduje autentikaci)
+      parameters:
+      - name: year
+        in: query
+        description: "Ročník, jehož série se mají vypsat. Default: aktuální roční\
+          k. Pozor, na rozhraní školních roků mohou být aktuální dva ročníky souč\
+          asně."
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: tasks
+        in: query
+        description: "Přepíná, zda se k sériím mají uvést i všechny úlohy."
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: Seznam sérií ve vybraném ročníku.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrayOfSeries'
+  /tasks/status:
+    get:
+      tags:
+      - tasks
+      summary: Získání stavu úlohy
+      parameters:
+      - name: task
+        in: query
+        description: textový identifikátor úlohy
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "Informace o stavu úlohy - seznamu podúloh, jejich výsledků\
+            , limitů pro aktuálně vygenerované vstupy."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        "4XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "5XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tasks/generate:
+    post:
+      tags:
+      - tasks
+      summary: Vygeneruje vstup pro úlohu
+      parameters:
+      - name: task
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: subtask
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Informace o podúloze a jejím právě vygenerovaném vstupu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subtask'
+        "4XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "5XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tasks/input:
+    post:
+      tags:
+      - tasks
+      summary: Stáhne vstup pro úlohu
+      parameters:
+      - name: task
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: subtask
+        in: query
+        description: ID podúlohy získané například z `/tasks/status`
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: generate
+        in: query
+        description: Při stahování vstupu rovnou vygenerovat nový s novou platností.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: vstup pro úlohu
+        "4XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "5XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tasks/submit:
+    post:
+      tags:
+      - tasks
+      summary: Odevzdá řešení úlohy ke kontrole
+      parameters:
+      - name: task
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: subtask
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      requestBody:
+        description: "Řešení úlohy. Opendatovky vyžadují content-type `text/plain`\
+          \ nebo `application/binary`, teoretické úlohy přijímají i PDF."
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+          application/binary:
+            schema:
+              type: string
+              format: binary
+          text/plain:
+            schema:
+              type: string
+              example: Resenim je slovo hroch.
+        required: true
+      responses:
+        "200":
+          description: Informace o podúloze a výsledku vyhodnocení řešení
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subtask'
+        "4XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "5XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tasks/x-summary:
+    get:
+      tags:
+      - tasks
+      summary: "Interní: Souhrn úloh ve Cvičišti"
+      description: |
+        Vypíše přehled všech úloh dostupných ve Cvičišti spolu se souhrnem bodů za všechny testy odevzdané jak v rámci Cvičiště, tak v sériích. **Nepoužívejte bez domluvy. Chování se může kdykoliv změnit.**
+      responses:
+        "200":
+          description: "Stav všech úloh ve Cvičišti. Pozor, některé jinak povinné\
+            \ atributy mohou chybět."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+                x-content-type: application/json
+        "4XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "5XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/x-get-token:
+    post:
+      tags:
+      - auth
+      summary: "Interní: Vytvoří dočasný token na základě cookie."
+      description: |
+        Vytvoří uživateli přihlášenému na webu KSP dočasný API token. Je určeno k použití z JavaScriptu na webu KSP, použití z jiných domén není kvůli cross-origin omezením možné. **Nepoužívejte bez domluvy. Chování se může kdykoliv změnit.**
+      responses:
+        "200":
+          description: Vygenerovaný token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "4XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "5XX":
+          description: popis chyby
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Task:
+      required:
+      - id
+      - max_points
+      - name
+      - points
+      - subtasks
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID úlohy
+        name:
+          type: string
+          description: Jméno úlohy
+        points:
+          type: number
+          description: Získané body za úlohu
+          format: float
+        max_points:
+          type: number
+          description: "Maximální množství bodů, které lze za úlohu získat."
+          format: float
+        subtasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subtask'
+      example:
+        max_points: 6.0274563
+        subtasks:
+        - input_generated: true
+          submitted_on: 1985-04-12T23:20:50+02:00
+          max_points: 5.962134
+          verdict: "Řešení nebylo přijato, protože není napsané růžově!"
+          download_url: http://example.com/aeiou
+          id: id
+          input_valid_until: 1985-04-12T23:20:50+02:00
+          points: 1.4658129
+        - input_generated: true
+          submitted_on: 1985-04-12T23:20:50+02:00
+          max_points: 5.962134
+          verdict: "Řešení nebylo přijato, protože není napsané růžově!"
+          download_url: http://example.com/aeiou
+          id: id
+          input_valid_until: 1985-04-12T23:20:50+02:00
+          points: 1.4658129
+        name: name
+        id: id
+        points: 0.8008282
+    Subtask:
+      required:
+      - id
+      - input_generated
+      - max_points
+      - points
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID podúlohy
+        points:
+          type: number
+          description: Získané množství bodů za tuto konkrétní podúlohu
+          format: float
+        max_points:
+          type: number
+          description: "Maximální množství bodů, které lze za úlohu podúlohu získat."
+          format: float
+        input_generated:
+          type: boolean
+          description: "Značí, zda je na serveru vstup vygenerován. Po vypršení platnosti\
+            \ vstupu se vrací do stavu `false`."
+        input_valid_until:
+          type: string
+          description: "Pokud `input_generated` je `true`, tak `input_valid_until`\
+            \ se nutně v objektu nachází také. Ve formátu [dle RFC3339](https://tools.ietf.org/html/rfc3339#section-5.6).\
+            \ Může obsahovat data daleko v budoucnosti pro prakticky časově neomezené\
+            \ vstupy."
+          format: date-time
+          example: 1985-04-12T23:20:50+02:00
+        download_url:
+          type: string
+          description: "Pokud `input_generated` je `true`, z tohoto URL je možné stá\
+            hnout vstup pro úlohu. Na rozdíl od operace `tasks/input` není potřeba\
+            \ žádná autorizace."
+          format: uri
+        submitted_on:
+          type: string
+          description: "Datumočas, kdy bylo odevzdáno aktuální řešení. Ve formátu\
+            \ [dle RFC3339](https://tools.ietf.org/html/rfc3339#section-5.6)."
+          format: date-time
+          example: 1985-04-12T23:20:50+02:00
+        verdict:
+          type: string
+          description: Textová informace o vyhodnocení aktuálního řešení.
+          example: "Řešení nebylo přijato, protože není napsané růžově!"
+      description: "Podúloha a stav jejího odevzdání. U obecných endpointů uvádíme\
+        \ zatím nejlepší odevzdání, u endpointu `/tasks/submit` právě provedené odevzdá\
+        ní."
+      example:
+        input_generated: true
+        submitted_on: 1985-04-12T23:20:50+02:00
+        max_points: 5.962134
+        verdict: "Řešení nebylo přijato, protože není napsané růžově!"
+        download_url: http://example.com/aeiou
+        id: id
+        input_valid_until: 1985-04-12T23:20:50+02:00
+        points: 1.4658129
+    ArrayOfSeries:
+      type: array
+      description: Seznam dostupných sérií.
+      items:
+        $ref: '#/components/schemas/Series'
+      x-schema-name: ArrayOfSeries
+    Series:
+      required:
+      - id
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID série
+          example: 34-Z1
+        tasks_published:
+          type: string
+          description: "Čas zveřejnění zadání úloh. Ve formátu [dle RFC3339](https://tools.ietf.org/html/rfc3339#section-5.6)."
+          format: date-time
+          example: 1985-04-12T23:20:50+02:00
+        deadline:
+          type: string
+          description: "Termín odevzdání řešení. Ve formátu [dle RFC3339](https://tools.ietf.org/html/rfc3339#section-5.6)."
+          format: date-time
+          example: 2022-04-12T23:20:50+02:00
+        deadline2:
+          type: string
+          description: Termín odevzdání řešení za redukovaný počet bodů (druhý termín
+            v KSP-Z).
+          format: date-time
+          example: 2022-04-26T20:50:52+02:00
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Series_tasks'
+      description: Základní informace o jedné sérii a úlohách v nich.
+      example:
+        tasks_published: 1985-04-12T23:20:50+02:00
+        id: 34-Z1
+        deadline: 2022-04-12T23:20:50+02:00
+        deadline2: 2022-04-26T20:50:52+02:00
+        tasks:
+        - name: Letopočty
+          id: 34-Z1-1
+          type: open-data
+          deadline: 2022-04-12T23:20:50+02:00
+          deadline2: 2022-04-26T20:50:52+02:00
+          enabled: true
+          points: 10
+        - name: Letopočty
+          id: 34-Z1-1
+          type: open-data
+          deadline: 2022-04-12T23:20:50+02:00
+          deadline2: 2022-04-26T20:50:52+02:00
+          enabled: true
+          points: 10
+    Error:
+      required:
+      - errorCode
+      - errorMsg
+      properties:
+        errorCode:
+          type: string
+          description: |
+            Kód chyby pro strojové zpracování:
+
+            - `bad-params`: chybné parametry požadavku
+            - `internal-error`: interní chyba serveru
+            - `no-set`: tato množina úloh neexistuje
+            - `no-subtask`: tato podúloha neexistuje
+            - `no-task`: tato úloha neexistuje
+            - `no-year`: tento ročník neexistuje
+            - `not-enrolled`: nejsi přihlášený do ročníku a kategorie
+            - `not-submittable`: tato úloha nemá povolené odevzdávání
+            - `opendata-not-generated`: open-datový vstup ještě nebyl vygenerován
+            - `submit-failed`: obecná chyba při odevzdávání řešení
+            - `unauthorized`: k provedení této operace nemáte právo
+            - `unsupported-task-type`: tato operace nepodporuje tento typ úloh
+
+            V budoucnosti mohou přibývat nové kódy chyb, a to i pro stávající operace.
+        errorMsg:
+          type: string
+          description: "Lidsky čitelná chybová zpráva. Není určena pro strojové zpracová\
+            ní, v budoucnu se může libovolně změnit."
+    inline_response_200:
+      required:
+      - token
+      - validity_seconds
+      type: object
+      properties:
+        token:
+          type: string
+          description: Dočasný API token
+        validity_seconds:
+          type: integer
+          description: Platnost tokenu v sekundách
+      example:
+        validity_seconds: 0
+        token: token
+    Series_tasks:
+      required:
+      - id
+      - name
+      - points
+      - type
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID úlohy
+          example: 34-Z1-1
+        name:
+          type: string
+          description: Název úlohy
+          example: Letopočty
+        type:
+          type: string
+          description: Typ úlohy (theory/open-data/serial/other)
+          example: open-data
+        enabled:
+          type: boolean
+          description: Je povoleno odevzdávání úlohy?
+          default: true
+        points:
+          type: integer
+          description: Počet bodů za úlohu
+          example: 10
+        deadline:
+          type: string
+          description: "Termín odevzdání řešení. Ve formátu [dle RFC3339](https://tools.ietf.org/html/rfc3339#section-5.6)."
+          format: date-time
+          example: 2022-04-12T23:20:50+02:00
+        deadline2:
+          type: string
+          description: Termín odevzdání řešení za redukovaný počet bodů (druhý termín
+            v KSP-Z).
+          format: date-time
+          example: 2022-04-26T20:50:52+02:00
+      example:
+        name: Letopočty
+        id: 34-Z1-1
+        type: open-data
+        deadline: 2022-04-12T23:20:50+02:00
+        deadline2: 2022-04-26T20:50:52+02:00
+        enabled: true
+        points: 10
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
