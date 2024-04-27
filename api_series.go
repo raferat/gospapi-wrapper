@@ -51,14 +51,14 @@ type SeriesApiTasksCatalogGetOpts struct {
 	Tasks optional.Bool
 }
 
-func (seriesService *SeriesApiService) TasksCatalogGet(ctx context.Context, requestOptions *SeriesApiTasksCatalogGetOpts) ([]Series, *http.Response, error) {
+func (serv *SeriesApiService) TasksCatalogGet(ctx context.Context, requestOptions *SeriesApiTasksCatalogGetOpts) ([]Series, *http.Response, error) {
 	var (
-		requestBody    interface{}
-		parsedResponse []Series
+		requestBody interface{}
+		result      []Series
 	)
 
 	// create path and map variables
-	requestPath := seriesService.client.cfg.BasePath + "/tasks/catalog"
+	requestPath := serv.client.cfg.BasePath + "/tasks/catalog"
 
 	requestHeaders := make(map[string]string)
 	requestQueryParams := url.Values{}
@@ -73,7 +73,7 @@ func (seriesService *SeriesApiService) TasksCatalogGet(ctx context.Context, requ
 	// set Accept header
 	requestHeaders["Accept"] = "application/json"
 
-	r, err := seriesService.client.prepareRequest(
+	r, err := serv.client.prepareRequest(
 		ctx,
 		requestPath,
 		"GET",
@@ -85,29 +85,36 @@ func (seriesService *SeriesApiService) TasksCatalogGet(ctx context.Context, requ
 		[]byte{},
 	)
 	if err != nil {
-		return parsedResponse, nil, err
+		return result, nil, err
 	}
 
-	rawResponse, err := seriesService.client.callAPI(r)
+	rawResponse, err := serv.client.callAPI(r)
 	if err != nil || rawResponse == nil {
-		return parsedResponse, rawResponse, err
+		return result, rawResponse, err
 	}
 
 	responseBody, err := io.ReadAll(rawResponse.Body)
 	rawResponse.Body.Close()
 	if err != nil {
-		return parsedResponse, rawResponse, err
+		return result, rawResponse, err
 	}
 
 	if rawResponse.StatusCode < 300 {
 		// If we succeed, return the data, otherwise pass on to decode error.
-		err = seriesService.client.decode(&parsedResponse, responseBody, rawResponse.Header.Get("Content-Type"))
-		return parsedResponse, rawResponse, err
+		err = serv.client.decode(&result, responseBody, rawResponse.Header.Get("Content-Type"))
+		return result, rawResponse, err
 	}
 
 	newErr := GenericSwaggerError{
 		body:  responseBody,
 		error: rawResponse.Status,
 	}
-	return parsedResponse, rawResponse, newErr
+	var v ModelError
+	err = serv.client.decode(&v, responseBody, rawResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr.error = err.Error()
+		return result, rawResponse, newErr
+	}
+	newErr.model = v
+	return result, rawResponse, newErr
 }
