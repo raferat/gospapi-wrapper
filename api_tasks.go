@@ -259,93 +259,59 @@ TasksApiService Odevzdá řešení úlohy ke kontrole
 */
 func (a *TasksApiService) TasksSubmitPost(ctx context.Context, body string, task string, subtask string) (Subtask, *http.Response, error) {
 	var (
-		localVarHttpMethod  = strings.ToUpper("Post")
-		localVarPostBody    interface{}
-		localVarFileName    string
-		localVarFileBytes   []byte
-		localVarReturnValue Subtask
+		requestBody interface{}
+		result      Subtask
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/tasks/submit"
+	requestPath := a.client.cfg.BasePath + "/tasks/submit"
 
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
+	requestHeaders := make(map[string]string)
+	requestQueryParams := url.Values{}
 
-	localVarQueryParams.Add("task", parameterToString(task, ""))
-	localVarQueryParams.Add("subtask", parameterToString(subtask, ""))
+	requestQueryParams.Add("task", parameterToString(task, ""))
+	requestQueryParams.Add("subtask", parameterToString(subtask, ""))
 
-	localVarHeaderParams["Content-Type"] = "text/plain"
+	requestHeaders["Content-Type"] = "text/plain"
 
 	// set Accept header
-	localVarHeaderParams["Accept"] = "application/json"
+	requestHeaders["Accept"] = "application/json"
 
 	// body params
-	localVarPostBody = &body
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	requestBody = &body
+	r, err := a.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, requestQueryParams, url.Values{}, "", []byte{})
 	if err != nil {
-		return localVarReturnValue, nil, err
+		return result, nil, err
 	}
 
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return localVarReturnValue, localVarHttpResponse, err
+	rawResponse, err := a.client.callAPI(r)
+	if err != nil || rawResponse == nil {
+		return result, rawResponse, err
 	}
 
-	localVarBody, err := io.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
+	responseBody, err := io.ReadAll(rawResponse.Body)
+	rawResponse.Body.Close()
 	if err != nil {
-		return localVarReturnValue, localVarHttpResponse, err
+		return result, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode < 300 {
-		// If we succeed, return the data, otherwise pass on to decode error.
-		err = a.client.decode(&localVarReturnValue, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-		if err == nil {
-			return localVarReturnValue, localVarHttpResponse, err
-		}
+	if rawResponse.StatusCode < 300 {
+		err = a.client.decode(&result, responseBody, rawResponse.Header.Get("Content-Type"))
+		return result, rawResponse, err
 	}
 
-	if localVarHttpResponse.StatusCode >= 300 {
-		newErr := GenericSwaggerError{
-			body:  localVarBody,
-			error: localVarHttpResponse.Status,
-		}
-		if localVarHttpResponse.StatusCode == 200 {
-			var v Subtask
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 4 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		if localVarHttpResponse.StatusCode/100 == 5 {
-			var v ModelError
-			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHttpResponse, newErr
-			}
-			newErr.model = v
-			return localVarReturnValue, localVarHttpResponse, newErr
-		}
-		return localVarReturnValue, localVarHttpResponse, newErr
+	newErr := GenericSwaggerError{
+		body:  responseBody,
+		error: rawResponse.Status,
 	}
-
-	return localVarReturnValue, localVarHttpResponse, nil
+	var v ModelError
+	err = a.client.decode(&v, responseBody, rawResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr.error = err.Error()
+		return result, rawResponse, newErr
+	}
+	newErr.model = v
+	return result, rawResponse, newErr
 }
 
 /*
