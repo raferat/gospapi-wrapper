@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/antihax/optional"
@@ -51,10 +52,10 @@ func (serv *SeriesApiService) TasksCatalogGet(ctx context.Context, requestOption
 	requestQueryParams := url.Values{}
 
 	if requestOptions != nil && requestOptions.Year.IsSet() {
-		requestQueryParams.Add("year", parameterToString(requestOptions.Year.Value(), ""))
+		requestQueryParams.Add("year", requestOptions.Year.Value())
 	}
 	if requestOptions != nil && requestOptions.Tasks.IsSet() {
-		requestQueryParams.Add("tasks", parameterToString(requestOptions.Tasks.Value(), ""))
+		requestQueryParams.Add("tasks", strconv.FormatBool(requestOptions.Tasks.Value()))
 	}
 
 	// set Accept header
@@ -66,11 +67,8 @@ func (serv *SeriesApiService) TasksCatalogGet(ctx context.Context, requestOption
 		"GET",
 		requestBody,
 		requestHeaders,
-		requestQueryParams,
-		url.Values{},
-		"",
-		[]byte{},
-	)
+		requestQueryParams)
+
 	if err != nil {
 		return result, nil, err
 	}

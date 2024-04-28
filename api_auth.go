@@ -18,9 +18,8 @@ Vytvoří uživateli přihlášenému na webu KSP dočasný API token. Je určen
 */
 func (serv *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineResponse200, *http.Response, error) {
 	var (
-		requestBody       interface{}
-		localVarFileBytes []byte
-		result            InlineResponse200
+		requestBody interface{}
+		result      InlineResponse200
 	)
 
 	// create path and map variables
@@ -31,7 +30,7 @@ func (serv *AuthApiService) AuthXGetTokenPost(ctx context.Context) (InlineRespon
 	// set Accept header
 	requestHeaders["Accept"] = "application/json"
 
-	r, err := serv.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, url.Values{}, url.Values{}, "", localVarFileBytes)
+	r, err := serv.client.prepareRequest(ctx, requestPath, "POST", requestBody, requestHeaders, url.Values{})
 	if err != nil {
 		return result, nil, err
 	}
